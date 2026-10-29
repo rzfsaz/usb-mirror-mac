@@ -2,6 +2,8 @@
 
 ## 1.2.0
 
+- Added an Apple Silicon PKG installer targeting Applications (macOS 14+).
+
 - Added Bahasa Indonesia, English, Japanese, and Simplified Chinese, including controls, connection messages, orientation labels, and the OBS guide.
 - Added System, Light, and Dark themes with saved preferences.
 - Language and appearance changes apply without restarting capture.

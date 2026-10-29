@@ -57,3 +57,6 @@ Pergantian landscape dan portrait telah diuji langsung dan dikonfirmasi pengguna
 - Logo putih digunakan untuk tema gelap, logo hitam untuk tema terang. Ikon Dock/Finder memakai ikon aplikasi khusus.
 - Dialog izin macOS dan pesan kesalahan dari sistem mengikuti bahasa macOS.
 - Unduh ZIP aplikasi Apple Silicon melalui GitHub Releases. Build ini ditandatangani lokal dan belum dinotarisasi Apple.
+
+## Installer PKG
+Unduh file `.pkg` dari GitHub Releases, tutup USB Mirror jika sedang berjalan, lalu buka installer dan ikuti langkahnya. Aplikasi dipasang di folder Applications. ZIP tetap tersedia sebagai alternatif. Installer belum menggunakan sertifikat Developer ID atau notarization Apple. Tidak ada layanan latar belakang atau updater otomatis yang ditambahkan.

@@ -38,7 +38,9 @@ The interface supports Bahasa Indonesia, English, Japanese, and Simplified Chine
 
 ## Download
 
-Download the Apple Silicon app ZIP from [GitHub Releases](https://github.com/rzfsaz/usb-mirror-mac/releases/latest), unzip it, and open USB Mirror.app. You can move it to Applications. The downloaded app is locally ad-hoc signed, not Apple-notarized; macOS may require explicit approval in Privacy & Security. Alternatively, build from source below.
+Download the **Apple Silicon .pkg installer** from [GitHub Releases](https://github.com/rzfsaz/usb-mirror-mac/releases/latest), open it, and follow the installer. It installs **USB Mirror.app** in **Applications**; open it there after installation. Quit an older running copy before installing. The ZIP remains available for manual installation.
+
+The installer is unsigned and the app is locally ad-hoc signed, not Apple-notarized; macOS may require explicit approval in Privacy & Security. Alternatively, build from source below.
 
 ## Appearance and language
 
@@ -106,3 +108,7 @@ Checks cover portrait/landscape sizing, desktop bounds, aspect preservation, and
 If this helps your streaming setup, a star helps others discover the project. Bug reports are welcome: include your Mac model, macOS version, iPhone model, iOS version, and the steps to reproduce the issue. Avoid posting personal screen content or device identifiers.
 
 Feature ideas and improvements can be proposed through GitHub Issues or pull requests.
+
+## Build the installer
+
+After building the app, run `./package.command`. It creates an Apple Silicon `.pkg` under `dist/`, checks for macOS 14 or later, and always installs to `/Applications/USB Mirror.app`. The installer does not add background services, startup items, or an automatic updater.

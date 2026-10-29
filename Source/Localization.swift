@@ -48,6 +48,7 @@ enum L10n {
         "Reset": ["Reset", "リセット", "重置"],
         "Suara iPhone": ["iPhone audio", "iPhoneの音声", "iPhone 音频"],
         "Mati": ["Off", "オフ", "关闭"],
+        "Laporkan bug": ["Report a bug", "不具合を報告", "报告问题"],
         "Panduan OBS": ["OBS guide", "OBSガイド", "OBS 指南"],
         "Siap masuk OBS": ["Set up OBS", "OBSの設定", "设置 OBS"],
         "USB Mirror — Kontrol": ["USB Mirror — Controls", "USB Mirror — コントロール", "USB Mirror — 控制"],

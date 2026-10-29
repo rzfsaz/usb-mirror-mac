@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1
+
+- Added a localized Report a bug link in the app that opens @noutq on Telegram.
+- Updated the README and GitHub issue chooser to route bug reports to Telegram.
+- Feature requests remain available through GitHub Issues.
+
 ## 1.2.0
 
 - Added an Apple Silicon PKG installer targeting Applications (macOS 14+).

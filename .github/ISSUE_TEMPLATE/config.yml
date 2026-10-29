@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a bug on Telegram
+    url: https://t.me/noutq
+    about: Chat with @noutq for USB Mirror bug reports. Include your app version and steps to reproduce.

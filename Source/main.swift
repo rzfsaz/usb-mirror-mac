@@ -378,7 +378,10 @@ struct Controls: View {
                 }
             }
             HStack {
-                Text("USB → MAC → OBS").font(.system(size: 10, weight: .medium, design: .monospaced)).tracking(1).foregroundStyle(muted)
+                Link(destination: URL(string: "https://t.me/noutq")!) {
+                    Label(model.text("Laporkan bug"), systemImage: "ladybug")
+                }.font(.system(size: 11, weight: .medium)).foregroundStyle(muted)
+                    .help("Telegram · @noutq")
                 Spacer()
                 Button(model.text("Panduan OBS")) { showHelp.toggle() }.buttonStyle(.plain).font(.system(size: 11, weight: .medium))
                     .popover(isPresented: $showHelp) {

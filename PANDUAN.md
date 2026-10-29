@@ -60,3 +60,6 @@ Pergantian landscape dan portrait telah diuji langsung dan dikonfirmasi pengguna
 
 ## Installer PKG
 Unduh file `.pkg` dari GitHub Releases, tutup USB Mirror jika sedang berjalan, lalu buka installer dan ikuti langkahnya. Aplikasi dipasang di folder Applications. ZIP tetap tersedia sebagai alternatif. Installer belum menggunakan sertifikat Developer ID atau notarization Apple. Tidak ada layanan latar belakang atau updater otomatis yang ditambahkan.
+
+## Laporan bug
+Klik **Laporkan bug** di aplikasi untuk membuka Telegram **@noutq**: https://t.me/noutq. Tuliskan versi USB Mirror, model perangkat, versi macOS/iOS, dan langkah terjadinya masalah. Tombol hanya membuka chat; pesan tidak dikirim otomatis.

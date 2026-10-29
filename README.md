@@ -15,7 +15,7 @@
 ![Apple Silicon](https://img.shields.io/badge/Apple-Silicon-333333)
 ![Swift](https://img.shields.io/badge/built_with-Swift-F05138)
 
-[**Download for Mac**](https://github.com/rzfsaz/usb-mirror-mac/releases/latest) · [Report a bug](https://github.com/rzfsaz/usb-mirror-mac/issues) · [Panduan Indonesia](PANDUAN.md)
+[**Download for Mac**](https://github.com/rzfsaz/usb-mirror-mac/releases/latest) · [Report a bug on Telegram](https://t.me/noutq) · [Panduan Indonesia](PANDUAN.md)
 
 </div>
 
@@ -105,7 +105,7 @@ Checks cover portrait/landscape sizing, desktop bounds, aspect preservation, and
 
 ## Feedback
 
-If this helps your streaming setup, a star helps others discover the project. Bug reports are welcome: include your Mac model, macOS version, iPhone model, iOS version, and the steps to reproduce the issue. Avoid posting personal screen content or device identifiers.
+If this helps your streaming setup, a star helps others discover the project. For bug reports, use **Report a bug** in the app or contact **[@noutq on Telegram](https://t.me/noutq)**. Include your USB Mirror version, Mac model, macOS version, iPhone model, iOS version, and the steps to reproduce the issue. Avoid sharing personal screen content or device identifiers. The link opens the Telegram chat; it does not send a message automatically.
 
 Feature ideas and improvements can be proposed through GitHub Issues or pull requests.
 

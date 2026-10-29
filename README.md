@@ -1,6 +1,25 @@
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Source/Resources/LogoDark.png">
+  <source media="(prefers-color-scheme: light)" srcset="Source/Resources/LogoLight.png">
+  <img alt="USB Mirror logo" src="Source/Resources/LogoLight.png" width="160">
+</picture>
+
 # USB Mirror for Mac
 
-A small native macOS app that mirrors an iPhone screen over USB and plays its audio on the Mac, with a separate clean window for OBS capture.
+**Your iPhone screen and audio on your Mac. Ready for OBS.**
+
+[![Latest release](https://img.shields.io/github/v/release/rzfsaz/usb-mirror-mac)](https://github.com/rzfsaz/usb-mirror-mac/releases/latest)
+![macOS 14+](https://img.shields.io/badge/macOS-14%2B-333333)
+![Apple Silicon](https://img.shields.io/badge/Apple-Silicon-333333)
+![Swift](https://img.shields.io/badge/built_with-Swift-F05138)
+
+[**Download for Mac**](https://github.com/rzfsaz/usb-mirror-mac/releases/latest) · [Report a bug](https://github.com/rzfsaz/usb-mirror-mac/issues) · [Panduan Indonesia](PANDUAN.md)
+
+</div>
+
+A lightweight native macOS app for mirroring an iPhone over USB, playing its audio on the Mac, and capturing a clean window in OBS. Includes automatic portrait/landscape sizing, four interface languages, and light/dark themes. No account or driver installation is required by USB Mirror.
 
 The interface supports Bahasa Indonesia, English, Japanese, and Simplified Chinese. Choose a language in the app; your choice is saved. The extended user guide is in Indonesian.
 
@@ -81,3 +100,9 @@ xcrun swiftc Source/MirrorGeometry.swift Source/Localization.swift Tests/main.sw
 ```
 
 Checks cover portrait/landscape sizing, desktop bounds, aspect preservation, and invalid dimensions. Automatic sizing follows the dimensions sent by the iPhone; it cannot force an iPhone app to support landscape. Full-screen windows keep their desktop size while the video fits inside.
+
+## Feedback
+
+If this helps your streaming setup, a star helps others discover the project. Bug reports are welcome: include your Mac model, macOS version, iPhone model, iOS version, and the steps to reproduce the issue. Avoid posting personal screen content or device identifiers.
+
+Feature ideas and improvements can be proposed through GitHub Issues or pull requests.

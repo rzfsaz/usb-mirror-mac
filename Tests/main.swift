@@ -11,3 +11,17 @@ for source in [CGSize(width: 1179, height: 2556), CGSize(width: 2556, height: 11
 assert(MirrorGeometry.fittedSize(source: .zero, available: desktop) == nil)
 assert(MirrorGeometry.fittedSize(source: CGSize(width: CGFloat.nan, height: 100), available: desktop) == nil)
 print("Portrait, landscape, bounds, aspect ratio, and invalid-input checks passed.")
+
+for (key, translations) in L10n.strings {
+    assert(translations.count == 3, "Missing translations: \(key)")
+    for language in AppLanguage.allCases {
+        let value = L10n.text(key, language: language)
+        assert(!value.isEmpty)
+        assert(value.components(separatedBy: "%@").count == key.components(separatedBy: "%@").count)
+    }
+}
+assert(L10n.text("Mulai mirroring", language: .english) == "Start mirroring")
+assert(L10n.text("Gelap", language: .japanese) == "ダーク")
+assert(L10n.text("Bahasa", language: .chinese) == "语言")
+assert(L10n.text("USB Mirror", language: .english) == "USB Mirror")
+print("All four languages have complete translations and matching format placeholders.")

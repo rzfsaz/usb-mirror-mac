@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSCameraUsageDescription</key>
+	<string>USB Mirror needs camera access to display the screen of your USB-connected iPhone.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>USB Mirror needs microphone access to play audio from your USB-connected iPhone.</string>
+</dict>
+</plist>

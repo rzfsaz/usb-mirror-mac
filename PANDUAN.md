@@ -49,3 +49,11 @@ Jika kresek juga muncul ketika aplikasi ditutup, jangan anggap itu masalah yang 
 - Setelah aplikasi dibuka ulang, aktifkan kembali **Suara iPhone** bila diperlukan.
 
 Pergantian landscape dan portrait telah diuji langsung dan dikonfirmasi pengguna pada iPhone 16.
+
+## Versi 1.2.0 — Bahasa, tema, dan logo
+- Pilih Bahasa Indonesia, English, 日本語, atau 简体中文 melalui menu Bahasa.
+- Tema tersedia dalam Terang, Gelap, dan Ikuti sistem.
+- Bahasa dan tema langsung berubah tanpa menghentikan mirroring dan tersimpan setelah aplikasi ditutup.
+- Logo putih digunakan untuk tema gelap, logo hitam untuk tema terang. Ikon Dock/Finder memakai ikon aplikasi khusus.
+- Dialog izin macOS dan pesan kesalahan dari sistem mengikuti bahasa macOS.
+- Unduh ZIP aplikasi Apple Silicon melalui GitHub Releases. Build ini ditandatangani lokal dan belum dinotarisasi Apple.

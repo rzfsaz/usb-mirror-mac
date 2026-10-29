@@ -16,6 +16,27 @@ final class Mirror: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBu
     private var lastFrameSize = CGSize.zero
     private var sourceSize = CGSize.zero
     @Published var orientationLabel = "Menunggu gambar"
+    @Published var language = AppLanguage.initial {
+        didSet {
+            UserDefaults.standard.set(language.rawValue, forKey: "appLanguage")
+            updateAppLanguage()
+        }
+    }
+    @Published var theme = AppTheme(rawValue: UserDefaults.standard.string(forKey: "appTheme") ?? "system") ?? .system {
+        didSet { UserDefaults.standard.set(theme.rawValue, forKey: "appTheme") }
+    }
+    @Published var statusArgument = ""
+    func text(_ key: String) -> String { L10n.text(key, language: language) }
+    var statusText: String {
+        let translated = text(status)
+        return translated.contains("%@") ? String(format: translated, statusArgument) : translated
+    }
+    func updateAppLanguage() {
+        for window in NSApp.windows where window.title != "USB Mirror — iPhone" {
+            if window.contentView is NSHostingView<Controls> { window.title = text("USB Mirror — Kontrol") }
+        }
+        NSApp.mainMenu?.items.first?.submenu?.items.first?.title = text("Keluar USB Mirror")
+    }
     @Published var rotation = 0
     @Published var autoFit = true
     @Published var devices: [AVCaptureDevice] = []
@@ -34,7 +55,7 @@ final class Mirror: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBu
         var address = CMIOObjectPropertyAddress(mSelector: CMIOObjectPropertySelector(kCMIOHardwarePropertyAllowScreenCaptureDevices), mScope: CMIOObjectPropertyScope(kCMIOObjectPropertyScopeGlobal), mElement: CMIOObjectPropertyElement(kCMIOObjectPropertyElementMain))
         var enabled: UInt32 = 1
         let result = CMIOObjectSetPropertyData(CMIOObjectID(kCMIOObjectSystemObject), &address, 0, nil, UInt32(MemoryLayout.size(ofValue: enabled)), &enabled)
-        if result != noErr { status = "Akses perangkat USB gagal (\(result)). Coba buka ulang aplikasi." }
+        if result != noErr { statusArgument = String(result); status = "Akses perangkat USB gagal (%@). Coba buka ulang aplikasi." }
         for name in [AVCaptureDevice.wasConnectedNotification, AVCaptureDevice.wasDisconnectedNotification] {
             observers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] notification in
                 guard let self = self else { return }
@@ -90,7 +111,8 @@ final class Mirror: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBu
             showOutput()
             let desiredVolume: Float = 0
             soundEnabled = false
-            status = "Menghubungkan ke \(device.localizedName)…"
+            statusArgument = device.localizedName
+            status = "Menghubungkan ke %@…"
             queue.async {
                 do {
                     self.sessionToken = UUID()
@@ -263,33 +285,39 @@ final class PreviewView: NSView {
 struct Controls: View {
     @ObservedObject var model: Mirror
     @State private var showHelp = false
-    private let ink = Color(red: 0.16, green: 0.18, blue: 0.17)
-    private let muted = Color(red: 0.45, green: 0.46, blue: 0.43)
+    @Environment(\.colorScheme) private var systemScheme
+    private var dark: Bool { model.theme == .dark || (model.theme == .system && systemScheme == .dark) }
+    private var ink: Color { dark ? Color(red: 0.91, green: 0.92, blue: 0.90) : Color(red: 0.16, green: 0.18, blue: 0.17) }
+    private var muted: Color { dark ? Color(red: 0.61, green: 0.64, blue: 0.61) : Color(red: 0.45, green: 0.46, blue: 0.43) }
+    private var canvas: Color { dark ? Color(red: 0.07, green: 0.08, blue: 0.075) : Color(red: 0.97, green: 0.965, blue: 0.95) }
+    private var surface: Color { dark ? Color(red: 0.115, green: 0.13, blue: 0.12) : .white }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            HStack(alignment: .top) {
+            HStack(alignment: .center, spacing: 12) {
+                Image(nsImage: NSImage(contentsOf: Bundle.main.resourceURL!.appendingPathComponent(dark ? "LogoDark.png" : "LogoLight.png")) ?? NSImage())
+                    .resizable().scaledToFit().frame(width: 54, height: 54).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("USB Mirror").font(.system(size: 32, weight: .semibold)).tracking(-1.2)
-                    Text("Layar iPhone. Siap untuk live.").font(.system(size: 13)).foregroundStyle(muted)
+                    Text("USB Mirror").font(.system(size: 27, weight: .semibold)).tracking(-1.2)
+                    Text(model.text("Layar iPhone. Siap untuk live.")).font(.system(size: 13)).foregroundStyle(muted)
                 }
                 Spacer()
                 HStack(spacing: 5) {
                     Circle().fill(model.running ? Color(red: 0.25, green: 0.48, blue: 0.33) : muted).frame(width: 6, height: 6)
-                    Text(model.running ? "LIVE VIEW" : "USB").font(.system(size: 10, weight: .semibold, design: .monospaced))
-                }.padding(9).background(Color(red: 0.91, green: 0.94, blue: 0.89), in: RoundedRectangle(cornerRadius: 6))
+                    Text(model.running ? model.text("LIVE VIEW") : "USB").font(.system(size: 10, weight: .semibold, design: .monospaced))
+                }.padding(9).background((dark ? Color(red: 0.18, green: 0.24, blue: 0.19) : Color(red: 0.91, green: 0.94, blue: 0.89)), in: RoundedRectangle(cornerRadius: 6))
             }
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
                     Image(systemName: "iphone").font(.system(size: 26, weight: .medium))
-                    Picker("Perangkat", selection: $model.selected) {
-                        if model.devices.isEmpty { Text("Sambungkan iPhone").tag("") }
+                    Picker(model.text("Perangkat"), selection: $model.selected) {
+                        if model.devices.isEmpty { Text(model.text("Sambungkan iPhone")).tag("") }
                         ForEach(model.devices, id: \.uniqueID) { Text($0.localizedName).tag($0.uniqueID) }
                     }.labelsHidden().disabled(model.running || model.busy)
                     Button { model.refresh() } label: { Image(systemName: "arrow.clockwise") }
-                        .buttonStyle(.plain).help("Cari ulang perangkat").disabled(model.busy)
+                        .buttonStyle(.plain).help(model.text("Cari ulang perangkat")).disabled(model.busy)
                 }
-                Text(model.status).font(.system(size: 12)).foregroundStyle(muted)
+                Text(model.statusText).font(.system(size: 12)).foregroundStyle(muted)
                     .fixedSize(horizontal: false, vertical: true).frame(minHeight: 30, alignment: .topLeading)
                 Button {
                     if model.running { model.stop() } else { model.start() }
@@ -297,57 +325,75 @@ struct Controls: View {
                     HStack(spacing: 8) {
                         if model.busy { ProgressView().controlSize(.small).tint(.white) }
                         Image(systemName: model.running ? "stop.fill" : "play.fill").font(.system(size: 11))
-                        Text(model.busy ? "Menghubungkan…" : (model.running ? "Hentikan mirroring" : "Mulai mirroring")).font(.system(size: 13, weight: .semibold))
-                    }.frame(maxWidth: .infinity).padding(.vertical, 13).foregroundStyle(.white)
+                        Text(model.text(model.busy ? "Menghubungkan…" : (model.running ? "Hentikan mirroring" : "Mulai mirroring"))).font(.system(size: 13, weight: .semibold))
+                    }.frame(maxWidth: .infinity).padding(.vertical, 13).foregroundStyle(dark ? Color.black : Color.white)
                         .background(ink.opacity(model.busy ? 0.6 : 1), in: RoundedRectangle(cornerRadius: 6))
                 }.buttonStyle(.plain).disabled(model.busy)
-            }.padding(20).background(.white, in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black.opacity(0.07)))
+            }.padding(20).background(surface, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke((dark ? Color.white.opacity(0.09) : Color.black.opacity(0.07))))
             VStack(spacing: 18) {
                 HStack {
-                    Label("Rotasi otomatis", systemImage: "rotate.right").font(.system(size: 13, weight: .medium))
+                    Label(model.text("Rotasi otomatis"), systemImage: "rotate.right").font(.system(size: 13, weight: .medium))
                     Spacer()
-                    Text(model.orientationLabel).font(.system(size: 11, design: .monospaced)).foregroundStyle(muted)
-                    Toggle("Rotasi otomatis", isOn: $model.autoFit).labelsHidden().toggleStyle(.switch).controlSize(.mini)
+                    Text(model.text(model.orientationLabel)).font(.system(size: 11, design: .monospaced)).foregroundStyle(muted)
+                    Toggle(model.text("Rotasi otomatis"), isOn: $model.autoFit).labelsHidden().toggleStyle(.switch).controlSize(.mini)
                         .onChange(of: model.autoFit) {
                             if model.autoFit { model.rotation = 0; model.updateOrientation() }
                         }
                 }
                 HStack(spacing: 10) {
-                    Button("Buka layar") { model.showOutput() }
-                    Button("Putar 90°") { model.rotateManually() }.disabled(!model.running)
+                    Button(model.text("Buka layar")) { model.showOutput() }
+                    Button(model.text("Putar 90°")) { model.rotateManually() }.disabled(!model.running)
                     if model.rotation != 0 {
-                        Button("Reset") { model.rotation = 0; model.updateOrientation() }
+                        Button(model.text("Reset")) { model.rotation = 0; model.updateOrientation() }
                     }
                     Spacer()
                 }.controlSize(.small)
                 Divider()
                 HStack {
-                    Label("Suara iPhone", systemImage: "speaker.wave.2").font(.system(size: 13, weight: .medium))
+                    Label(model.text("Suara iPhone"), systemImage: "speaker.wave.2").font(.system(size: 13, weight: .medium))
                     Spacer()
-                    Text(model.soundEnabled ? "\(Int(model.volume * 100))%" : "Mati").font(.system(size: 11, design: .monospaced)).foregroundStyle(muted)
-                    Toggle("Suara iPhone", isOn: $model.soundEnabled).labelsHidden().toggleStyle(.switch).controlSize(.mini)
+                    Text(model.soundEnabled ? "\(Int(model.volume * 100))%" : model.text("Mati")).font(.system(size: 11, design: .monospaced)).foregroundStyle(muted)
+                    Toggle(model.text("Suara iPhone"), isOn: $model.soundEnabled).labelsHidden().toggleStyle(.switch).controlSize(.mini)
                         .onChange(of: model.soundEnabled) { model.updateVolume() }.disabled(!model.running)
                 }
                 Slider(value: $model.volume, in: 0...1).controlSize(.small)
                     .onChange(of: model.volume) { model.updateVolume() }.disabled(!model.soundEnabled)
             }
+            Divider()
+            VStack(spacing: 12) {
+                HStack {
+                    Label(model.text("Bahasa"), systemImage: "globe").font(.system(size: 12))
+                    Spacer()
+                    Picker(model.text("Bahasa"), selection: $model.language) {
+                        ForEach(AppLanguage.allCases) { Text($0.name).tag($0) }
+                    }.labelsHidden().fixedSize()
+                }
+                HStack {
+                    Label(model.text("Tema"), systemImage: "circle.lefthalf.filled").font(.system(size: 12))
+                    Spacer()
+                    Picker(model.text("Tema"), selection: $model.theme) {
+                        ForEach(AppTheme.allCases) { Text(model.text($0.label)).tag($0) }
+                    }.labelsHidden().pickerStyle(.segmented).frame(width: 235)
+                }
+            }
             HStack {
                 Text("USB → MAC → OBS").font(.system(size: 10, weight: .medium, design: .monospaced)).tracking(1).foregroundStyle(muted)
                 Spacer()
-                Button("Panduan OBS") { showHelp.toggle() }.buttonStyle(.plain).font(.system(size: 11, weight: .medium))
+                Button(model.text("Panduan OBS")) { showHelp.toggle() }.buttonStyle(.plain).font(.system(size: 11, weight: .medium))
                     .popover(isPresented: $showHelp) {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Siap masuk OBS").font(.headline)
-                            Text("Tambahkan macOS Screen Capture, lalu pilih jendela USB Mirror — iPhone. Aktifkan audio, atau gunakan macOS Audio Capture khusus USB Mirror.")
-                            Text("Buka game landscape di iPhone. Jendela mengikuti ukuran gambar yang dikirim iPhone. Gunakan Putar 90° jika gambar masih menyamping.")
-                            Text("Suara awalnya mati. Gunakan headphone dan uji rekaman sebelum live.")
+                            Text(model.text("Siap masuk OBS")).font(.headline)
+                            Text(model.text("Tambahkan macOS Screen Capture, lalu pilih jendela USB Mirror — iPhone. Aktifkan audio, atau gunakan macOS Audio Capture khusus USB Mirror."))
+                            Text(model.text("Buka game landscape di iPhone. Jendela mengikuti ukuran gambar yang dikirim iPhone. Gunakan Putar 90° jika gambar masih menyamping."))
+                            Text(model.text("Suara awalnya mati. Gunakan headphone dan uji rekaman sebelum live."))
                         }.font(.system(size: 12)).lineSpacing(4).padding(22).frame(width: 320)
                     }
             }
         }.padding(28).frame(width: 440).foregroundStyle(ink)
             .tint(Color(red: 0.31, green: 0.43, blue: 0.34))
-            .background(Color(red: 0.97, green: 0.965, blue: 0.95)).preferredColorScheme(.light)
+            .background(canvas)
+            .preferredColorScheme(model.theme == .system ? nil : (model.theme == .dark ? .dark : .light))
     }
 }
 
@@ -356,8 +402,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow!
     func applicationDidFinishLaunching(_ notification: Notification) {
         model = Mirror()
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 440, height: 560), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
-        window.title = "USB Mirror — Kontrol"
+        if let icon = NSImage(contentsOf: Bundle.main.resourceURL!.appendingPathComponent("AppIcon.icns")) {
+            NSApp.applicationIconImage = icon
+        }
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 440, height: 680), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+        window.title = model.text("USB Mirror — Kontrol")
         window.contentView = NSHostingView(rootView: Controls(model: model))
         window.isReleasedWhenClosed = false
         window.center()
@@ -365,7 +414,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "Keluar USB Mirror", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: model.text("Keluar USB Mirror"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
         menu.addItem(appItem)
         NSApp.mainMenu = menu

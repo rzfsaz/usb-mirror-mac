@@ -2,7 +2,7 @@
 
 A small native macOS app that mirrors an iPhone screen over USB and plays its audio on the Mac, with a separate clean window for OBS capture.
 
-The interface and user guide are in Indonesian.
+The interface supports Bahasa Indonesia, English, Japanese, and Simplified Chinese. Choose a language in the app; your choice is saved. The extended user guide is in Indonesian.
 
 ## Features
 
@@ -17,10 +17,20 @@ The interface and user guide are in Indonesian.
 - Connection status confirms receipt of the first video frame.
 - Stops a session if no video frame arrives within 12 seconds.
 
+## Download
+
+Download the Apple Silicon app ZIP from [GitHub Releases](https://github.com/rzfsaz/usb-mirror-mac/releases/latest), unzip it, and open USB Mirror.app. You can move it to Applications. The downloaded app is locally ad-hoc signed, not Apple-notarized; macOS may require explicit approval in Privacy & Security. Alternatively, build from source below.
+
+## Appearance and language
+
+Choose **System**, **Light**, or **Dark** under Theme. The in-app logo switches between the provided black and white variants. Theme and language changes apply immediately without stopping capture, and persist across launches. On first launch, the language follows the system when supported and otherwise defaults to English.
+
+macOS permission dialogs follow the OS language, independently of the in-app language selector. OS-provided error descriptions may also use the system language. The capture window name stays **USB Mirror — iPhone** in every language so OBS can keep targeting it.
+
 ## Requirements
 
 - Apple Silicon Mac running macOS 14 or later.
-- Xcode with the macOS SDK and Swift compiler.
+- Xcode with the macOS SDK and Swift compiler only if building from source.
 - iPhone and a USB data cable. Connect directly to the Mac for initial troubleshooting.
 
 ## Build and run
@@ -66,7 +76,7 @@ This is an initial implementation. It does not guarantee zero latency or a speci
 ## Geometry checks
 
 ```sh
-xcrun swiftc Source/MirrorGeometry.swift Tests/main.swift -o /tmp/usbmirror-geometry-tests
+xcrun swiftc Source/MirrorGeometry.swift Source/Localization.swift Tests/main.swift -o /tmp/usbmirror-geometry-tests
 /tmp/usbmirror-geometry-tests
 ```
 

@@ -8,6 +8,9 @@ The interface and user guide are in Indonesian.
 
 - USB iPhone screen discovery with automatic refresh.
 - Separate controls and mirror windows for OBS.
+- Automatic portrait/landscape window sizing from iPhone frame dimensions.
+- Manual 90° rotation and reset for sources that remain sideways.
+- Compact warm-toned controls with an on-demand OBS guide.
 - Native AVFoundation video preview with preserved aspect ratio.
 - iPhone audio playback with a mute toggle and volume control.
 - Audio starts muted; the initial volume is 25%.
@@ -43,6 +46,8 @@ See [PANDUAN.md](PANDUAN.md) for the full Indonesian guide and troubleshooting s
 
 ## Validation and limitations
 
+Portrait/landscape switching was also confirmed on the connected iPhone after the 1.1 update.
+
 Screen mirroring and audio playback were confirmed with an iPhone 16 and an Apple Silicon Mac running macOS 26.2 using a direct USB-C connection. OBS capture and end-to-end latency have not been independently measured.
 
 This is an initial implementation. It does not guarantee zero latency or a specific frame rate, and does not provide remote touch control, a virtual camera, recording, or streaming. Protected content may not display or play audio. Other hardware and OS combinations require testing.
@@ -57,3 +62,12 @@ This is an initial implementation. It does not guarantee zero latency or a speci
 
 - [Apple: CoreMediaIO screen-capture devices](https://developer.apple.com/documentation/coremediaio/kcmiohardwarepropertyallowscreencapturedevices)
 - [OBS: macOS audio capture](https://obsproject.com/kb/macos-desktop-audio-capture-guide)
+
+## Geometry checks
+
+```sh
+xcrun swiftc Source/MirrorGeometry.swift Tests/main.swift -o /tmp/usbmirror-geometry-tests
+/tmp/usbmirror-geometry-tests
+```
+
+Checks cover portrait/landscape sizing, desktop bounds, aspect preservation, and invalid dimensions. Automatic sizing follows the dimensions sent by the iPhone; it cannot force an iPhone app to support landscape. Full-screen windows keep their desktop size while the video fits inside.

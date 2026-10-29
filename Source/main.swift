@@ -13,6 +13,11 @@ final class Mirror: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBu
     private var sessionToken = UUID()
     private var receivedFrame = false
     private var audioReady = false
+    private var lastFrameSize = CGSize.zero
+    private var sourceSize = CGSize.zero
+    @Published var orientationLabel = "Menunggu gambar"
+    @Published var rotation = 0
+    @Published var autoFit = true
     @Published var devices: [AVCaptureDevice] = []
     @Published var selected = ""
     @Published var status = "Sambungkan iPhone menggunakan kabel USB."
@@ -90,6 +95,7 @@ final class Mirror: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBu
                 do {
                     self.sessionToken = UUID()
                     self.receivedFrame = false
+                    self.lastFrameSize = .zero
                     self.audioReady = false
                     self.session.beginConfiguration()
                     for input in self.session.inputs { self.session.removeInput(input) }
@@ -169,10 +175,45 @@ final class Mirror: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBu
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        guard !receivedFrame, CMSampleBufferGetImageBuffer(sampleBuffer) != nil else { return }
-        receivedFrame = true
-        let message = audioReady ? "Gambar iPhone masuk • aktifkan Suara iPhone bila siap." : "Gambar iPhone masuk • perangkat belum menyediakan audio."
-        DispatchQueue.main.async { self.status = message }
+        guard CMSampleBufferGetImageBuffer(sampleBuffer) != nil else { return }
+        if !receivedFrame {
+            receivedFrame = true
+            let message = audioReady ? "Gambar masuk. Audio siap diaktifkan." : "Gambar masuk. Audio belum tersedia."
+            DispatchQueue.main.async { self.status = message }
+        }
+        // iPhone screen capture changes presentation dimensions when its UI rotates.
+        guard let format = CMSampleBufferGetFormatDescription(sampleBuffer) else { return }
+        let size = CMVideoFormatDescriptionGetPresentationDimensions(format, usePixelAspectRatio: true, useCleanAperture: true)
+        guard size.width > 0, size.height > 0, size != lastFrameSize else { return }
+        lastFrameSize = size
+        DispatchQueue.main.async {
+            self.sourceSize = size
+            self.updateOrientation()
+        }
+    }
+
+    func updateOrientation() {
+        guard sourceSize.width > 0, sourceSize.height > 0 else { return }
+        let size = rotation % 2 == 0 ? sourceSize : CGSize(width: sourceSize.height, height: sourceSize.width)
+        orientationLabel = size.width > size.height ? "Landscape" : "Portrait"
+        (outputWindow?.contentView as? PreviewView)?.setRotation(rotation)
+        guard autoFit, let window = outputWindow, !window.styleMask.contains(.fullScreen),
+              let screen = window.screen ?? NSScreen.main else { return }
+        let visible = screen.visibleFrame.insetBy(dx: 24, dy: 24)
+        let chrome = window.frame.height - (window.contentView?.bounds.height ?? window.frame.height)
+        guard let fitted = MirrorGeometry.fittedSize(source: size, available: CGSize(width: visible.width, height: visible.height - chrome)) else { return }
+        let oldFrame = window.frame
+        window.contentAspectRatio = size
+        var frame = window.frameRect(forContentRect: CGRect(origin: .zero, size: fitted))
+        frame.origin = CGPoint(x: oldFrame.midX - frame.width / 2, y: oldFrame.midY - frame.height / 2)
+        frame.origin.x = max(visible.minX, min(frame.origin.x, visible.maxX - frame.width))
+        frame.origin.y = max(visible.minY, min(frame.origin.y, visible.maxY - frame.height))
+        window.setFrame(frame, display: true)
+    }
+
+    func rotateManually() {
+        rotation = (rotation + 1) % 4
+        updateOrientation()
     }
 
     func showOutput() {
@@ -182,16 +223,22 @@ final class Mirror: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBu
             window.backgroundColor = .black
             window.isReleasedWhenClosed = false
             window.contentView = PreviewView(session: session)
-            window.minSize = NSSize(width: 240, height: 240)
+            window.contentMinSize = NSSize(width: 160, height: 160)
             window.center()
             outputWindow = window
         }
         outputWindow?.makeKeyAndOrderFront(nil)
+        updateOrientation()
     }
 }
 
 final class PreviewView: NSView {
     let preview: AVCaptureVideoPreviewLayer
+    private var quarterTurns = 0
+    func setRotation(_ turns: Int) {
+        quarterTurns = turns
+        needsLayout = true
+    }
     init(session: AVCaptureSession) {
         preview = AVCaptureVideoPreviewLayer(session: session)
         super.init(frame: .zero)
@@ -205,64 +252,102 @@ final class PreviewView: NSView {
         super.layout()
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        preview.frame = bounds
+        let rotated = quarterTurns % 2 != 0
+        preview.bounds = CGRect(origin: .zero, size: rotated ? CGSize(width: bounds.height, height: bounds.width) : bounds.size)
+        preview.position = CGPoint(x: bounds.midX, y: bounds.midY)
+        preview.setAffineTransform(CGAffineTransform(rotationAngle: CGFloat(quarterTurns) * .pi / 2))
         CATransaction.commit()
     }
 }
 
 struct Controls: View {
     @ObservedObject var model: Mirror
+    @State private var showHelp = false
+    private let ink = Color(red: 0.16, green: 0.18, blue: 0.17)
+    private let muted = Color(red: 0.45, green: 0.46, blue: 0.43)
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            HStack(spacing: 14) {
-                Image(systemName: "iphone.and.arrow.forward").font(.system(size: 34)).foregroundStyle(.mint)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("USB Mirror").font(.system(size: 28, weight: .semibold))
-                    Text("iPhone → Mac → OBS").foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 24) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("USB Mirror").font(.system(size: 32, weight: .semibold)).tracking(-1.2)
+                    Text("Layar iPhone. Siap untuk live.").font(.system(size: 13)).foregroundStyle(muted)
                 }
                 Spacer()
-                Text("USB").font(.caption.bold()).padding(8).background(.mint.opacity(0.12), in: Capsule())
+                HStack(spacing: 5) {
+                    Circle().fill(model.running ? Color(red: 0.25, green: 0.48, blue: 0.33) : muted).frame(width: 6, height: 6)
+                    Text(model.running ? "LIVE VIEW" : "USB").font(.system(size: 10, weight: .semibold, design: .monospaced))
+                }.padding(9).background(Color(red: 0.91, green: 0.94, blue: 0.89), in: RoundedRectangle(cornerRadius: 6))
             }
-            Divider()
-            VStack(alignment: .leading, spacing: 10) {
-                Text("PERANGKAT").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Picker("iPhone", selection: $model.selected) {
-                        if model.devices.isEmpty { Text("Belum ada iPhone").tag("") }
-                        ForEach(model.devices, id: \.uniqueID) { device in Text(device.localizedName).tag(device.uniqueID) }
+                    Image(systemName: "iphone").font(.system(size: 26, weight: .medium))
+                    Picker("Perangkat", selection: $model.selected) {
+                        if model.devices.isEmpty { Text("Sambungkan iPhone").tag("") }
+                        ForEach(model.devices, id: \.uniqueID) { Text($0.localizedName).tag($0.uniqueID) }
                     }.labelsHidden().disabled(model.running || model.busy)
-                    Button("Cari ulang") { model.refresh() }.disabled(model.busy)
+                    Button { model.refresh() } label: { Image(systemName: "arrow.clockwise") }
+                        .buttonStyle(.plain).help("Cari ulang perangkat").disabled(model.busy)
                 }
-                Text(model.status).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Text(model.status).font(.system(size: 12)).foregroundStyle(muted)
+                    .fixedSize(horizontal: false, vertical: true).frame(minHeight: 30, alignment: .topLeading)
+                Button {
+                    if model.running { model.stop() } else { model.start() }
+                } label: {
+                    HStack(spacing: 8) {
+                        if model.busy { ProgressView().controlSize(.small).tint(.white) }
+                        Image(systemName: model.running ? "stop.fill" : "play.fill").font(.system(size: 11))
+                        Text(model.busy ? "Menghubungkan…" : (model.running ? "Hentikan mirroring" : "Mulai mirroring")).font(.system(size: 13, weight: .semibold))
+                    }.frame(maxWidth: .infinity).padding(.vertical, 13).foregroundStyle(.white)
+                        .background(ink.opacity(model.busy ? 0.6 : 1), in: RoundedRectangle(cornerRadius: 6))
+                }.buttonStyle(.plain).disabled(model.busy)
+            }.padding(20).background(.white, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black.opacity(0.07)))
+            VStack(spacing: 18) {
+                HStack {
+                    Label("Rotasi otomatis", systemImage: "rotate.right").font(.system(size: 13, weight: .medium))
+                    Spacer()
+                    Text(model.orientationLabel).font(.system(size: 11, design: .monospaced)).foregroundStyle(muted)
+                    Toggle("Rotasi otomatis", isOn: $model.autoFit).labelsHidden().toggleStyle(.switch).controlSize(.mini)
+                        .onChange(of: model.autoFit) {
+                            if model.autoFit { model.rotation = 0; model.updateOrientation() }
+                        }
+                }
+                HStack(spacing: 10) {
+                    Button("Buka layar") { model.showOutput() }
+                    Button("Putar 90°") { model.rotateManually() }.disabled(!model.running)
+                    if model.rotation != 0 {
+                        Button("Reset") { model.rotation = 0; model.updateOrientation() }
+                    }
+                    Spacer()
+                }.controlSize(.small)
+                Divider()
+                HStack {
+                    Label("Suara iPhone", systemImage: "speaker.wave.2").font(.system(size: 13, weight: .medium))
+                    Spacer()
+                    Text(model.soundEnabled ? "\(Int(model.volume * 100))%" : "Mati").font(.system(size: 11, design: .monospaced)).foregroundStyle(muted)
+                    Toggle("Suara iPhone", isOn: $model.soundEnabled).labelsHidden().toggleStyle(.switch).controlSize(.mini)
+                        .onChange(of: model.soundEnabled) { model.updateVolume() }.disabled(!model.running)
+                }
+                Slider(value: $model.volume, in: 0...1).controlSize(.small)
+                    .onChange(of: model.volume) { model.updateVolume() }.disabled(!model.soundEnabled)
             }
             HStack {
-                Button(model.running ? "Hentikan" : "Mulai mirroring") {
-                    if model.running { model.stop() } else { model.start() }
-                }.buttonStyle(.borderedProminent).tint(.teal).disabled(model.busy)
-                Button("Tampilkan layar") { model.showOutput() }
-                if model.busy { ProgressView().controlSize(.small) }
+                Text("USB → MAC → OBS").font(.system(size: 10, weight: .medium, design: .monospaced)).tracking(1).foregroundStyle(muted)
+                Spacer()
+                Button("Panduan OBS") { showHelp.toggle() }.buttonStyle(.plain).font(.system(size: 11, weight: .medium))
+                    .popover(isPresented: $showHelp) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Siap masuk OBS").font(.headline)
+                            Text("Tambahkan macOS Screen Capture, lalu pilih jendela USB Mirror — iPhone. Aktifkan audio, atau gunakan macOS Audio Capture khusus USB Mirror.")
+                            Text("Buka game landscape di iPhone. Jendela mengikuti ukuran gambar yang dikirim iPhone. Gunakan Putar 90° jika gambar masih menyamping.")
+                            Text("Suara awalnya mati. Gunakan headphone dan uji rekaman sebelum live.")
+                        }.font(.system(size: 12)).lineSpacing(4).padding(22).frame(width: 320)
+                    }
             }
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Toggle("Suara iPhone", isOn: $model.soundEnabled)
-                        .onChange(of: model.soundEnabled) { model.updateVolume() }
-                        .disabled(!model.running)
-                    Spacer()
-                    Text("\(Int(model.volume * 100))%").monospacedDigit().foregroundStyle(.secondary)
-                }
-                Slider(value: $model.volume, in: 0...1).onChange(of: model.volume) { model.updateVolume() }
-                Text("Suara awalnya mati. Aktifkan setelah gambar muncul, lalu naikkan volume perlahan. Matikan sakelar bila terdengar kresek.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            Divider()
-            VStack(alignment: .leading, spacing: 9) {
-                Label("Siapkan untuk live", systemImage: "dot.radiowaves.left.and.right").font(.headline)
-                Text("1. Sambungkan USB, buka kunci iPhone, lalu pilih Percayai.\n2. Klik Mulai mirroring.\n3. Di OBS, tambahkan macOS Screen Capture dan pilih jendela USB Mirror — iPhone.\n4. Aktifkan capture audio; bila perlu gunakan macOS Audio Capture untuk aplikasi USB Mirror.")
-                    .font(.callout).lineSpacing(5).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                Text("Gunakan headphone agar suara tidak masuk ulang melalui mikrofon. Uji rekaman pendek sebelum live.").font(.caption).foregroundStyle(.secondary)
-            }
-            Text("Koneksi langsung USB • latensi bergantung perangkat dan OBS").font(.caption2).foregroundStyle(.tertiary)
-        }.padding(28).frame(width: 480)
+        }.padding(28).frame(width: 440).foregroundStyle(ink)
+            .tint(Color(red: 0.31, green: 0.43, blue: 0.34))
+            .background(Color(red: 0.97, green: 0.965, blue: 0.95)).preferredColorScheme(.light)
     }
 }
 
@@ -271,7 +356,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow!
     func applicationDidFinishLaunching(_ notification: Notification) {
         model = Mirror()
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 740), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 440, height: 560), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
         window.title = "USB Mirror — Kontrol"
         window.contentView = NSHostingView(rootView: Controls(model: model))
         window.isReleasedWhenClosed = false

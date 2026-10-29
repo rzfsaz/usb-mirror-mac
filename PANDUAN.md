@@ -39,3 +39,13 @@ Build dan pembukaan aplikasi dapat diperiksa tanpa iPhone, tetapi mirroring, aud
 Versi ini memantau perangkat setiap detik karena sumber layar iPhone dapat baru muncul setelah pencarian awal. Status berhasil menunggu frame gambar pertama. Jika dalam 12 detik tidak ada gambar, sesi dihentikan. Audio mulai dalam keadaan mati.
 
 Jika kresek juga muncul ketika aplikasi ditutup, jangan anggap itu masalah yang sudah diselesaikan oleh sakelar mute. Cabut kabel untuk menghentikan gangguan, lalu periksa kabel data dan koneksi langsung tanpa hub. Penyebab dan audio akhir masih perlu diuji.
+
+## Versi 1.1 — Rotasi dan tampilan baru
+- Rotasi otomatis aktif secara default. Buka game landscape di iPhone; jendela mirror menyesuaikan rasio gambar secara otomatis. Kembali ke aplikasi portrait untuk mengembalikan bentuk jendela.
+- Pengaturan ini mengikuti gambar yang dikirim iPhone, bukan memaksa aplikasi iPhone berputar.
+- Gunakan **Putar 90°** jika gambar masih menyamping; **Reset** menghapus putaran manual.
+- Saat fullscreen, video tetap menyesuaikan area layar tanpa mengubah ukuran desktop.
+- Panduan OBS kini tersedia melalui tombol **Panduan OBS**.
+- Setelah aplikasi dibuka ulang, aktifkan kembali **Suara iPhone** bila diperlukan.
+
+Pergantian landscape dan portrait telah diuji langsung dan dikonfirmasi pengguna pada iPhone 16.
